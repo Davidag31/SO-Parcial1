@@ -6,46 +6,52 @@ CXXFLAGS = -std=c++11 -Iinclude -Wall -Wextra
 SRC_DIR = src
 INCLUDE_DIR = include
 BUILD_DIR = build
+OBJ_DIR = $(BUILD_DIR)/src
 
 # Archivos fuente y de cabecera
-SRCS = $(wildcard $(SRC_DIR)/*.cpp) main.cpp
-OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
+CHAT_SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+CHAT_OBJS = $(CHAT_SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+MAIN_OBJ = $(BUILD_DIR)/main.o
 
 # Archivo ejecutable
 TARGET = $(BUILD_DIR)/chat
 
 # Regla por defecto
-all: $(TARGET)
+all: $(BUILD_DIR) $(TARGET)
 
-# Regla para crear el directorio de compilación
+# Regla para crear los directorios de compilación
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)/$(SRC_DIR)
+	mkdir -p $(OBJ_DIR)
 
 # Regla para compilar el ejecutable
-$(TARGET): $(OBJS)
+$(TARGET): $(CHAT_OBJS) $(MAIN_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # Regla para compilar los archivos objeto
-$(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Regla para compilar el archivo objeto de main.cpp
+$(MAIN_OBJ): main.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Limpiar archivos compilados
 clean:
 	rm -rf $(BUILD_DIR)
 
-# Ejecutar el servidor con puerto dinámico
+# Ejecutar el servidor
 run-servidor: $(TARGET)
-	@read -p "Ingrese el puerto para el servidor: " port; \
-	./$(TARGET) servidor $$port
+	./$(TARGET) servidor 12347 12349
 
-# Ejecutar el cliente con puerto y dirección IP dinámicos
+# Ejecutar el cliente
 run-cliente: $(TARGET)
-	@read -p "Ingrese la dirección IP del servidor: " ip; \
-	read -p "Ingrese el puerto del servidor: " port; \
-	./$(TARGET) cliente $$ip $$port
+	./$(TARGET) cliente 127.0.0.1 12347
 
-# Regla para forzar la recompilación
-rebuild: clean all
+# Ejecutar el monitor
+run-monitor: $(TARGET)
+	./$(TARGET) monitor 127.0.0.1 12349
 
 # Declarar reglas como phony
-.PHONY: all clean run-servidor run-cliente rebuild
+.PHONY: all clean run-servidor run-cliente run-monitor
+
+
